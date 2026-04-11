@@ -39,7 +39,7 @@ from faster_whisper import WhisperModel
 
 # ─── Configuración ────────────────────────────────────────────
 # Teclas que deben estar pulsadas simultáneamente para grabar
-HOTKEY_KEYS = {"windows izquierda", "alt"}
+HOTKEY_KEYS = {"windows izquierda", "ctrl"}
 #  Otras combis: {"right ctrl"} | {"right alt"} | {"left windows","left alt"}
 MODEL_SIZE  = "medium"      # tiny | base | small | medium | large-v3
 LANGUAGE    = "es"          # None = auto-detectar idioma
@@ -85,7 +85,7 @@ class Indicator:
 
         self._pulse_after = None
         label = " + ".join(
-            k.replace("left ", "").replace("right ", "").replace("windows izquierda", "🪟").replace("alt", "ALT")
+            k.replace("left ", "").replace("right ", "").replace("windows izquierda", "🪟").replace("alt", "ALT").replace("ctrl", "CTRL")
             for k in sorted(HOTKEY_KEYS)
         )
         self._set(f"🎤  [{label}]", "#1e1e1e", "#444444", "#666666")
@@ -93,7 +93,7 @@ class Indicator:
     # ── Estados ──
     def idle(self):
         label = " + ".join(
-            k.replace("left ", "").replace("right ", "").replace("windows izquierda", "🪟").replace("alt", "ALT")
+            k.replace("left ", "").replace("right ", "").replace("windows izquierda", "🪟").replace("alt", "ALT").replace("ctrl", "CTRL")
             for k in sorted(HOTKEY_KEYS)
         )
         self.root.after(0, lambda: self._set(
@@ -159,21 +159,27 @@ print("✅ Modelo listo.\n")
 _recording    = False
 _audio_chunks = []
 _hotkey_down  = False
+_stream       = None
 _ui: Indicator = None   # se asigna después de crear la ventana
 
 
 def _audio_callback(indata, frames, t, status):
-    if _recording:
-        _audio_chunks.append(indata.copy())
+    _audio_chunks.append(indata.copy())
 
 
-stream = sd.InputStream(
-    samplerate=SAMPLE_RATE,
-    channels=1,
-    dtype="float32",
-    callback=_audio_callback,
-)
-stream.start()
+def _open_mic():
+    global _stream
+    _stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1,
+                              dtype="float32", callback=_audio_callback)
+    _stream.start()
+
+
+def _close_mic():
+    global _stream
+    if _stream:
+        _stream.stop()
+        _stream.close()
+        _stream = None
 
 
 def _transcribe_and_type(chunks):
@@ -213,13 +219,13 @@ def _hotkey_monitor():
         if pressed and not _hotkey_down:
             _hotkey_down = True
             _audio_chunks = []
-            _recording = True
+            _open_mic()
             print("🎙️  Grabando...", end="", flush=True)
             _ui.recording()
 
         elif not pressed and _hotkey_down:
             _hotkey_down = False
-            _recording = False
+            _close_mic()
             chunks = list(_audio_chunks)
             secs = round(len(chunks) * (POLL_MS / 1000), 1)
             print(f" ({secs}s)")
@@ -239,7 +245,7 @@ def _hotkey_monitor():
 
 # ─── Arranque ─────────────────────────────────────────────────
 def _shutdown(*_):
-    stream.stop()
+    _close_mic()
     try:
         _ui.root.destroy()
     except Exception:
