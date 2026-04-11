@@ -84,14 +84,20 @@ class Indicator:
             widget.bind("<Button-3>", self._show_menu)
 
         self._pulse_after = None
-        label = " + ".join(k.replace("left ", "").replace("right ", "") for k in sorted(HOTKEY_KEYS))
-        self._set(f"🎤  [{label.upper()}]", "#1e1e1e", "#444444", "#666666")
+        label = " + ".join(
+            k.replace("left ", "").replace("right ", "").replace("windows izquierda", "🪟").replace("alt", "ALT")
+            for k in sorted(HOTKEY_KEYS)
+        )
+        self._set(f"🎤  [{label}]", "#1e1e1e", "#444444", "#666666")
 
     # ── Estados ──
     def idle(self):
-        label = " + ".join(k.replace("left ", "").replace("right ", "") for k in sorted(HOTKEY_KEYS))
+        label = " + ".join(
+            k.replace("left ", "").replace("right ", "").replace("windows izquierda", "🪟").replace("alt", "ALT")
+            for k in sorted(HOTKEY_KEYS)
+        )
         self.root.after(0, lambda: self._set(
-            f"🎤  [{label.upper()}]", "#1e1e1e", "#444444", "#666666"))
+            f"🎤  [{label}]", "#1e1e1e", "#444444", "#666666"))
 
     def recording(self):
         self.root.after(0, lambda: self._set(
