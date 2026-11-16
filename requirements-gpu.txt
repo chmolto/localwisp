@@ -1,0 +1,4 @@
+# Optional: CUDA libraries for running Whisper on an NVIDIA GPU (much faster).
+# LocalWisp finds these DLLs automatically; no system-wide CUDA install needed.
+nvidia-cublas-cu12
+nvidia-cudnn-cu12==9.*
